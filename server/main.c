@@ -12,6 +12,7 @@
 #include "lib/hash.h"
 #include "fs.h"
 #include "sync.h"
+#include <sys/socket.h>
 
 #define MAX_COMMANDS 10
 #define MAX_INPUT_SIZE 100 
@@ -61,6 +62,60 @@ static void parseArgs (long argc, char* const argv[]){
         displayUsage(argv[0]);
     }
 }
+
+
+void serverCreate(){
+
+    int sockfd, newsockfd, clilen, childpid, servlen;
+
+    struct sockaddr_un cli_addr, serv_addr;
+    /* Criasocket stream */
+    if ((sockfd= socket(AF_UNIX,SOCK_STREAM,0)) < 0)
+        err_dump("server: can't open stream socket");
+    //Eliminaonome,paraocasodejáexistir.
+    unlink(UNIXSTR_PATH);
+    /* O nomeserve para queosclientespossamidentificaro servidor*/
+    bzero((char *)&serv_addr, sizeof(serv_addr));
+    serv_addr.sun_family= AF_UNIX;
+    strcpy(serv_addr.sun_path, UNIXSTR_PATH);
+    servlen= strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
+    if (bind(sockfd, (structsockaddr*) &serv_addr, servlen)< 0)
+        err_dump("server, can't bind local address");
+    listen(sockfd, 5);
+
+    for(;;){
+
+    clilen=sizeof(cli_addr);
+    newsockfd = accept(sockfd,(structsockaddr*)&cli_addr,&clilen);
+    if(newsockfd<0)
+        err_dump("server:accepterror");/*Lançaprocessofilhoparatratardocliente*/
+    if((childpid=fork())<0)
+        err_dump("server:forkerror");
+    else if(childpid==0){/*Processofilho.FechasockfdjáquenãoéutilizadopeloprocessofilhoOsdadosrecebidosdoclientesãoreenviadosparaocliente*/
+        close(sockfd);
+        str_echo(newsockfd);
+        exit(0);
+    }/*Processopai.Fechanewsockfdquenãoutiliza*/
+    close(newsockfd);
+    }
+}
+
+
+int str_echo(intsockfd){
+    int n;
+    char line[MAXLINE];
+    for (;;) {/* Lêumalinhado socket */
+    n = readline(sockfd, line, MAXLINE);
+    if (n == 0)
+        return;
+    else if (n < 0)
+        err_dump("str_echo: readlineerror");/*Reenviaalinhaparaosocket.ncontacomo\0dastring,casocontrárioperdia-sesempreumcaracter!*/
+    if(write(sockfd,line,n)!=n)
+        err_dump("str_echo:writeerror");
+    }
+}
+
+
 
 
 void insertCommand(char* data) {
@@ -242,57 +297,9 @@ int main(int argc, char* argv[]) {
     if (fclose(output) != 0)
         exit(EXIT_FAILURE);
 
-    int sockfd, newsockfd, clilen, childpid, servlen;
-
-    struct sockaddr_un cli_addr, serv_addr;
-    /* Criasocket stream */
-    if ((sockfd= socket(AF_UNIX,SOCK_STREAM,0)) < 0)
-        err_dump("server: can't open stream socket");
-    //Eliminaonome,paraocasodejáexistir.
-    unlink(UNIXSTR_PATH);
-    /* O nomeserve para queosclientespossamidentificaro servidor*/
-    bzero((char *)&serv_addr, sizeof(serv_addr));
-    serv_addr.sun_family= AF_UNIX;
-    strcpy(serv_addr.sun_path, UNIXSTR_PATH);
-    servlen= strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
-    if (bind(sockfd, (structsockaddr*) &serv_addr, servlen)< 0)
-        err_dump("server, can't bind local address");
-    listen(sockfd, 5);
-
-    for(;;){
-
-    clilen=sizeof(cli_addr);
-    newsockfd = accept(sockfd,(structsockaddr*)&cli_addr,&clilen);
-    if(newsockfd<0)
-        err_dump("server:accepterror");/*Lançaprocessofilhoparatratardocliente*/
-    if((childpid=fork())<0)
-        err_dump("server:forkerror");
-    else if(childpid==0){/*Processofilho.FechasockfdjáquenãoéutilizadopeloprocessofilhoOsdadosrecebidosdoclientesãoreenviadosparaocliente*/
-        close(sockfd);
-        str_echo(newsockfd);
-        exit(0);
-    }/*Processopai.Fechanewsockfdquenãoutiliza*/
-    close(newsockfd);
-    }
-
     free_tecnicofs(fs);
     
     printTime(t0, t1);
     
     exit(EXIT_SUCCESS);
-}
-
-
-int str_echo(intsockfd){
-    int n;
-    char line[MAXLINE];
-    for (;;) {/* Lêumalinhado socket */
-    n = readline(sockfd, line, MAXLINE);
-    if (n == 0)
-        return;
-    else if (n < 0)
-        err_dump("str_echo: readlineerror");/*Reenviaalinhaparaosocket.ncontacomo\0dastring,casocontrárioperdia-sesempreumcaracter!*/
-    if(write(sockfd,line,n)!=n)
-        err_dump("str_echo:writeerror");
-    }
 }
