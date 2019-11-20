@@ -1,4 +1,4 @@
-#include "unix.h"
+/*#include "unix.h"*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -72,15 +72,22 @@ void serverCreate(){
     /* Criasocket stream */
     if ((sockfd= socket(AF_UNIX,SOCK_STREAM,0)) < 0)
         err_dump("server: can't open stream socket");
+    
     //Eliminaonome,paraocasodejáexistir.
     unlink(UNIXSTR_PATH);
     /* O nomeserve para queosclientespossamidentificaro servidor*/
     bzero((char *)&serv_addr, sizeof(serv_addr));
+    
     serv_addr.sun_family= AF_UNIX;
+    
     strcpy(serv_addr.sun_path, UNIXSTR_PATH);
+    
     servlen= strlen(serv_addr.sun_path) + sizeof(serv_addr.sun_family);
+    
     if (bind(sockfd, (structsockaddr*) &serv_addr, servlen)< 0)
         err_dump("server, can't bind local address");
+    
+
     listen(sockfd, 5);
 
     for(;;){

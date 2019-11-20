@@ -9,7 +9,7 @@ int sockClient;
 
 int tfsMount(char * address) {
 
-	int sockClient, servlen;
+	int servlen;
 
 	struct sockaddr_un serv_addr;
 	
