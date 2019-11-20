@@ -66,7 +66,7 @@ static void parseArgs (long argc, char* const argv[]){
 
 void serverCreate(){
 
-    int sockfd, newsockfd, clilen, childpid, servlen;
+    int sockfd, servlen;
 
     struct sockaddr_un cli_addr, serv_addr;
     /* Criasocket stream */
@@ -89,15 +89,22 @@ void serverCreate(){
     
 
     listen(sockfd, 5);
+}
+
+int makeConnection(int *sockfd){
+
+    int newsockfd, clilen, childpid;
 
     for(;;){
 
-    clilen=sizeof(cli_addr);
-    newsockfd = accept(sockfd,(structsockaddr*)&cli_addr,&clilen);
+    clilen = sizeof(cli_addr);
+    newsockfd = accept(sockfd,(struct sockaddr*)&cli_addr, &clilen);
     if(newsockfd<0)
         err_dump("server:accepterror");/*Lançaprocessofilhoparatratardocliente*/
+
     if((childpid=fork())<0)
         err_dump("server:forkerror");
+
     else if(childpid==0){/*Processofilho.FechasockfdjáquenãoéutilizadopeloprocessofilhoOsdadosrecebidosdoclientesãoreenviadosparaocliente*/
         close(sockfd);
         str_echo(newsockfd);
