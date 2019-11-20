@@ -116,15 +116,18 @@ int makeConnection(int *sockfd){
 
 
 int str_echo(intsockfd){
+    
     int n;
     char line[MAXLINE];
+
     for (;;) {/* Lêumalinhado socket */
     n = readline(sockfd, line, MAXLINE);
     if (n == 0)
         return;
     else if (n < 0)
         err_dump("str_echo: readlineerror");/*Reenviaalinhaparaosocket.ncontacomo\0dastring,casocontrárioperdia-sesempreumcaracter!*/
-    if(write(sockfd,line,n)!=n)
+    
+    if (write(sockfd,line,n) != n)
         err_dump("str_echo:writeerror");
     }
 }
